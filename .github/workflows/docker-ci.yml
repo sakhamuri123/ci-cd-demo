@@ -4,7 +4,7 @@ on:
   push:
     branches:
       - main
-  workflow_dispatch:
+  workflow_dispatch:      
 
 jobs:
   build-and-push:
@@ -23,10 +23,15 @@ jobs:
         username: ${{ secrets.DOCKER_USERNAME }}
         password: ${{ secrets.DOCKER_PASSWORD }}
 
-    - name: Build Docker image (multi-stage)
+    - name: Build Docker image with immutable tag
       run: |
-        docker build -t ${{ secrets.DOCKER_USERNAME }}/cicd-demo:latest .
+        IMAGE_TAG=${{ github.sha }}
+        docker build -t rsakhamuri/cicd-demo:$IMAGE_TAG .
+        docker tag rsakhamuri/cicd-demo:$IMAGE_TAG rsakhamuri/cicd-demo:latest
 
-    - name: Push Docker image
+    - name: Push Docker image tags
       run: |
-        docker push ${{ secrets.DOCKER_USERNAME }}/cicd-demo:latest
+        IMAGE_TAG=${{ github.sha }}
+        docker push rsakhamuri/cicd-demo:$IMAGE_TAG
+        docker push rsakhamuri/cicd-demo:latest
+
