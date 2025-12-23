@@ -30,7 +30,7 @@ jobs:
         docker tag rsakhamuri/cicd-demo:$IMAGE_TAG rsakhamuri/cicd-demo:latest
     
     - name: Scan image with Trivy
-      uses: aquasecurity/trivy-action@v0.22.0
+      uses: aquasecurity/trivy-action@0.22.0
       with:
         image-ref: rsakhamuri/cicd-demo:${{ github.sha }}
         severity: CRITICAL,HIGH
