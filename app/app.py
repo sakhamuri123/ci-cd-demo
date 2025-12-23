@@ -4,6 +4,6 @@ class Handler(BaseHTTPRequestHandler):
     def do_GET(self):
         self.send_response(200)
         self.end_headers()
-        self.wfile.write(b"Hello again from CI/CD - This time Deployed automatically from GitHub Actions!")
+        self.wfile.write(b"THIS IS VERSION 2 OF TASK - NEW CHANGE")
 
 HTTPServer(("0.0.0.0", 8080), Handler).serve_forever()
