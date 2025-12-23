@@ -4,6 +4,6 @@ class Handler(BaseHTTPRequestHandler):
     def do_GET(self):
         self.send_response(200)
         self.end_headers()
-        self.wfile.write(b"Hello again from CI/CD - now with image tagging")
+        self.wfile.write(b"Hello again from CI/CD - now with image tagging on Dec 23rd 2025")
 
 HTTPServer(("0.0.0.0", 8080), Handler).serve_forever()
