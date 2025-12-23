@@ -1,13 +1,12 @@
-name: Docker CI Pipeline
+name: CI/CD Pipeline
 
 on:
   push:
     branches:
       - main
-  workflow_dispatch:      
-
+  workflow_dispatch:
 jobs:
-  build-and-push:
+  build-scan-deploy:
     runs-on: ubuntu-latest
 
     steps:
@@ -23,24 +22,42 @@ jobs:
         username: ${{ secrets.DOCKER_USERNAME }}
         password: ${{ secrets.DOCKER_PASSWORD }}
 
-    - name: Build Docker image with immutable tag
+    - name: Build Docker image
       run: |
         IMAGE_TAG=${{ github.sha }}
         docker build -t rsakhamuri/cicd-demo:$IMAGE_TAG .
         docker tag rsakhamuri/cicd-demo:$IMAGE_TAG rsakhamuri/cicd-demo:latest
-    
+
     - name: Scan image with Trivy
       uses: aquasecurity/trivy-action@0.22.0
       with:
         image-ref: rsakhamuri/cicd-demo:${{ github.sha }}
         severity: CRITICAL,HIGH
         exit-code: 1
-    
-        
 
-    - name: Push Docker image tags
+    - name: Push Docker image
       run: |
         IMAGE_TAG=${{ github.sha }}
         docker push rsakhamuri/cicd-demo:$IMAGE_TAG
         docker push rsakhamuri/cicd-demo:latest
 
+    # ---------- CD STEP ----------
+    - name: Deploy to EC2 via SSH
+      uses: appleboy/ssh-action@v1.0.3
+      with:
+        host: ${{ secrets.EC2_HOST }}
+        username: ${{ secrets.EC2_USER }}
+        key: ${{ secrets.EC2_SSH_KEY }}
+        script: |
+          IMAGE_TAG=${{ github.sha }}
+
+          docker pull rsakhamuri/cicd-demo:$IMAGE_TAG
+
+          docker stop cicd-app || true
+          docker rm cicd-app || true
+
+          docker run -d \
+            --name cicd-app \
+            -p 80:8080 \
+            --restart unless-stopped \
+            rsakhamuri/cicd-demo:$IMAGE_TAG
