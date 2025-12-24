@@ -52,13 +52,17 @@ jobs:
     - name: Register ECS task definition
       id: register-task
       run: |
-        aws ecs register-task-definition \
-          --cli-input-json file://task-def-rendered.json
+        TASK_DEF_ARN=$(aws ecs register-task-definition \
+        --cli-input-json file://task-def-rendered.json \
+        --query 'taskDefinition.taskDefinitionArn' \
+        --output text)
+
+        echo "TASK_DEF_ARN=$TASK_DEF_ARN" >> $GITHUB_ENV
 
     - name: Update ECS service
       run: |
         aws ecs update-service \
           --cluster ${{ secrets.ECS_CLUSTER }} \
           --service ${{ secrets.ECS_SERVICE }} \
-          --task-definition cicd-task \
+          --task-definition $TASK_DEF_ARN \
           --force-new-deployment
