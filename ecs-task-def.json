@@ -1,5 +1,6 @@
 {
   "family": "cicd-task-def",
+  "executionRoleArn": "arn:aws:iam::975050024946:role/ecsTaskExecutionRole",
   "networkMode": "awsvpc",
   "requiresCompatibilities": ["FARGATE"],
   "cpu": "256",
