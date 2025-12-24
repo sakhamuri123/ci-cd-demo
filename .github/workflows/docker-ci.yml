@@ -1,20 +1,24 @@
-name: CI/CD Pipeline
+name: CI/CD to ECS
 
 on:
   push:
     branches:
       - main
-  workflow_dispatch:
+
 jobs:
-  build-scan-deploy:
+  build-and-deploy:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout source code
+    - name: Checkout code
       uses: actions/checkout@v4
 
-    - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v3
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ secrets.AWS_REGION }}
 
     - name: Login to Docker Hub
       uses: docker/login-action@v3
@@ -41,31 +45,20 @@ jobs:
         docker push rsakhamuri/cicd-demo:$IMAGE_TAG
         docker push rsakhamuri/cicd-demo:latest
 
-    # ---------- CD STEP ----------
-    - name: Deploy to EC2 via SSH
-      uses: appleboy/ssh-action@v1.0.3
-      with:
-        host: ${{ secrets.EC2_HOST }}
-        username: ${{ secrets.EC2_USER }}
-        key: ${{ secrets.EC2_SSH_KEY }}
-        script: |
-          IMAGE_TAG=${{ github.sha }}
+    - name: Render ECS task definition
+      run: |
+        sed "s|IMAGE_TAG|${{ github.sha }}|g" ecs-task-def.json > task-def-rendered.json
 
-          echo "Pulling latest Docker image..."
-          docker pull rsakhamuri/cicd-demo:$IMAGE_TAG
+    - name: Register ECS task definition
+      id: register-task
+      run: |
+        aws ecs register-task-definition \
+          --cli-input-json file://task-def-rendered.json
 
-          echo "Stopping any container using port 80..."
-          docker ps --filter "publish=80" -q | xargs -r docker stop
-          docker ps -a --filter "publish=80" -q | xargs -r docker rm
-
-          echo "Stopping existing cicd-app container if exists..."
-          docker stop cicd-app || true
-          docker rm cicd-app || true
-
-
-          echo "Starting new container..."
-          docker run -d \
-          --name cicd-app \
-          -p 80:8080 \
-          --restart unless-stopped \
-          rsakhamuri/cicd-demo:$IMAGE_TAG
+    - name: Update ECS service
+      run: |
+        aws ecs update-service \
+          --cluster ${{ secrets.ECS_CLUSTER }} \
+          --service ${{ secrets.ECS_SERVICE }} \
+          --task-definition cicd-task \
+          --force-new-deployment
