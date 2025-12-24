@@ -7,7 +7,7 @@
   "memory": "512",
   "containerDefinitions": [
     {
-      "name": "cicd-app",
+      "name": "cicd-app-ecs",
       "image": "rsakhamuri/cicd-demo:IMAGE_TAG",
       "essential": true,
       "portMappings": [
