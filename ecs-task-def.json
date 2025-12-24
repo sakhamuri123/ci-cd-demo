@@ -30,8 +30,8 @@
         "options": {
           "awslogs-group": "/ecs/cicd-app",
           "awslogs-region": "ap-south-1",
-          "awslogs-stream-prefix": "ecs",
-          "awslogs-create-group": "true"
+          "awslogs-stream-prefix": "ecs"
+          
         }
       }
     }
